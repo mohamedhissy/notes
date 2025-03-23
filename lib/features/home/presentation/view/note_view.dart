@@ -1,151 +1,108 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:notetest/features/home/presentation/view/add_notes.dart';
 
 import '../controller/note_controller.dart';
 
 class NoteView extends StatelessWidget {
   final controller = Get.put(NoteController());
-
-  void _showNoteDialog(
-      {String? id, String? initialTitle, String? initialContent}) {
-    controller.titleController.text = initialTitle ?? '';
-    controller.contentController.text = initialContent ?? '';
-
-    Get.defaultDialog(
-      title: id == null ? 'Add Note' : 'Edit Note',
-      content: Column(
-        children: [
-          TextField(
-            controller: controller.titleController,
-            decoration: InputDecoration(labelText: 'Title'),
-          ),
-          TextField(
-            controller: controller.contentController,
-            decoration: InputDecoration(labelText: 'Content'),
-          ),
-        ],
-      ),
-      textConfirm: 'Save',
-      textCancel: 'Cancel',
-      onConfirm: () {
-        final title = controller.titleController.text.trim();
-        final content = controller.contentController.text.trim();
-
-        if (title.isNotEmpty && content.isNotEmpty) {
-          if (id == null) {
-            controller.addNote(title, content);
-          } else {
-            controller.updateNote(id, title, content);
-          }
-        }
-        Get.back(); // Close dialog
-      },
-    );
-  }
+  final titleController = TextEditingController();
+  final contentController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Get.to(() => AddNotes()),
-        child: Icon(Icons.add),
-        backgroundColor: Colors.blue,
-      ),
-      appBar: AppBar(
-        title: Text('My Notes'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _showNoteDialog(),
+    return GetBuilder<NoteController>(builder: (controller) {
+      return Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            controller.clearTextField();
+          },
+          child: Icon(Icons.add),
+          backgroundColor: Colors.blue,
+        ),
+        appBar: AppBar(
+          title: Text('Notes'),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.add),
+              onPressed: () {
+                controller.clearTextField();
+              },
+            )
+          ],
+          leading: IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {},
           ),
-        ],
-      ),
-      body: Obx(() {
-        final notes = controller.notes;
-
-        if (notes.isEmpty) {
-          return Center(child: Text('No notes available.'));
-        }
-
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // 2 columns
-            crossAxisSpacing: 10, // Space between columns
-            mainAxisSpacing: 10, // Space between rows
-          ),
-          padding: EdgeInsets.all(10),
-          itemCount: controller.notes.length,
-          itemBuilder: (context, index) {
-            final note = notes[index];
-            return Container(
-              width: 250,
-              height: 250,
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.cyan,
-              ),
-              child: Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(note.title),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Text(note.content),
-                    ],
+        ),
+        body: Obx(
+          () {
+            return Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => controller.deleteNote(note.id),
+                  itemCount: controller.notes.length,
+                  itemBuilder: (context, index) {
+                    final note = controller.notes[index];
+                    return InkWell(
+                      onTap: () {
+                        controller.clearTextField(note: note);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    note.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete,
+                                      color: Colors.red, size: 20),
+                                  padding: EdgeInsets.zero,
+                                  constraints: BoxConstraints(),
+                                  onPressed: () {
+                                    controller.deleteNote(note.id);
+                                  },
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Expanded(
+                              child: Text(
+                                note.content,
+                                maxLines: 4,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    );
+                  }),
             );
           },
-          // Prevent unnecessary scrolling
-          physics: NeverScrollableScrollPhysics(),
-        );
-      }),
-    );
+        ),
+      );
+    });
   }
 }
-
-// ListView.builder(
-// itemCount: notes.length,
-// itemBuilder: (context, index) {
-// final note = notes[index];
-// return Card(
-// margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-// child: ListTile(
-// title: Text(note.title),
-// subtitle: Text(note.content),
-// trailing: Row(
-// mainAxisSize: MainAxisSize.min,
-// children: [
-// IconButton(
-// icon: Icon(Icons.edit, color: Colors.orange),
-// onPressed: () => _showNoteDialog(
-// id: note.id,
-// initialTitle: note.title,
-// initialContent: note.content,
-// ),
-// ),
-// IconButton(
-// icon: Icon(Icons.delete, color: Colors.red),
-// onPressed: () => controller.deleteNote(note.id),
-// ),
-// ],
-// ),
-// ),
-// );
-// },
-// );

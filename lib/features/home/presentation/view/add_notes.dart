@@ -18,7 +18,9 @@ class AddNotes extends StatelessWidget {
       builder: (controller) {
         return Scaffold(
           floatingActionButton: FloatingActionButton(
-            onPressed: () {},
+            onPressed: () {
+              controller.createNote(id: note?.id);
+            },
             child: Icon(Icons.add),
             backgroundColor: Colors.blue,
           ),
